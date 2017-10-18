@@ -49,6 +49,7 @@ public class GameScreen extends ScreenAdapter {
     List<Star> mStars;
     Ufo mUfo;
     Player mPlayer;
+    Enemy mEnemy;
 
     float mHeightSoFar;
     int mGameState;
@@ -62,7 +63,6 @@ public class GameScreen extends ScreenAdapter {
 
     //PreferencesとはAndroidのPreferenceと同様にキーと値でデータを保存するもの
     Preferences mPrefs;
-
 
     public GameScreen(JumpActionGame game) {
 
@@ -114,7 +114,7 @@ public class GameScreen extends ScreenAdapter {
     @Override
     public void render (float delta) {
 
-        // それぞれの状態をアップデート
+        // 下で定義、それぞれの状態をアップデートする関数
         update(delta);
 
         Gdx.gl.glClearColor(0, 0, 0, 1);
@@ -207,7 +207,10 @@ public class GameScreen extends ScreenAdapter {
                 mStars.add(star);
             }
 
+            //最大値を下げて
             y += (maxJumpHeight - 0.5f);
+
+            //高さはランダム
             y -= mRandom.nextFloat() * (maxJumpHeight / 3);
         }
 
@@ -309,6 +312,10 @@ public class GameScreen extends ScreenAdapter {
 
                 if (mScore > mHighScore) {
                     mHighScore = mScore;
+                    // ハイスコアをPreferenceに保存する
+                    // putIntegerメソッドで第1引数にキー、第2引数に値を指定します。そのあとflushメソッドを呼び出すことで実際に値を永続化
+                    mPrefs.putInteger("HIGHSCORE", mHighScore);
+                    mPrefs.flush();
                 }
                 break;
             }
@@ -340,7 +347,9 @@ public class GameScreen extends ScreenAdapter {
     }
 
     private void updateGameOver() {
-
+        if (Gdx.input.justTouched()) {
+            mGame.setScreen(new ResultScreen(mGame, mScore));
+        }
     }
 
     private void checkGameOver() {
