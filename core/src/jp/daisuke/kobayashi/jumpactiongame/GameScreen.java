@@ -2,6 +2,7 @@ package jp.daisuke.kobayashi.jumpactiongame;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.ScreenAdapter;
+import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
@@ -47,9 +48,9 @@ public class GameScreen extends ScreenAdapter {
     Random mRandom;
     List<Step> mSteps;
     List<Star> mStars;
+    List<Enemy> mEnemy;
     Ufo mUfo;
     Player mPlayer;
-    Enemy mEnemy;
 
     float mHeightSoFar;
     int mGameState;
@@ -63,6 +64,9 @@ public class GameScreen extends ScreenAdapter {
 
     //PreferencesとはAndroidのPreferenceと同様にキーと値でデータを保存するもの
     Preferences mPrefs;
+
+    //サウンド準備
+    Sound enemySound = Gdx.audio.newSound(Gdx.files.internal("data/bom.wav"));
 
     public GameScreen(JumpActionGame game) {
 
@@ -93,6 +97,7 @@ public class GameScreen extends ScreenAdapter {
         mRandom = new Random();
         mSteps = new ArrayList<Step>();
         mStars = new ArrayList<Star>();
+        mEnemy = new ArrayList<Enemy>();
         mGameState = GAME_STATE_READY;
         mTouchPoint = new Vector3();
 
@@ -148,6 +153,11 @@ public class GameScreen extends ScreenAdapter {
             mStars.get(i).draw(mGame.batch);
         }
 
+        // Enemy
+        for (int i = 0; i < mEnemy.size(); i++) {
+            mEnemy.get(i).draw(mGame.batch);
+        }
+
         // UFO
         mUfo.draw(mGame.batch);
 
@@ -183,11 +193,14 @@ public class GameScreen extends ScreenAdapter {
         Texture starTexture = new Texture("star.png");
         Texture playerTexture = new Texture("uma.png");
         Texture ufoTexture = new Texture("ufo.png");
+        Texture enemyTexture = new Texture("enemy.png");
 
         // StepとStarをゴールの高さまで配置していく
         float y = 0;
 
+        //ジャンプの高さ　1/2gt^2
         float maxJumpHeight = Player.PLAYER_JUMP_VELOCITY * Player.PLAYER_JUMP_VELOCITY / (2 * -GRAVITY);
+
         while (y < WORLD_HEIGHT - 5) {
 
             //条件式 ? 式1 : 式2
@@ -205,6 +218,23 @@ public class GameScreen extends ScreenAdapter {
                 Star star = new Star(starTexture, 0, 0, 72, 72);
                 star.setPosition(step.getX() + mRandom.nextFloat(), step.getY() + Star.STAR_HEIGHT + mRandom.nextFloat() * 3);
                 mStars.add(star);
+            }
+
+            //Enemyのx,yをランダムで設定してリスト格納
+            if (mRandom.nextFloat() > 0.6f) {
+                int type_enemy;
+                float yEnemy = step.getY() + Enemy.ENEMY_HEIGHT + mRandom.nextFloat() * 3;
+
+                if(mRandom.nextFloat() > 0.8f ){
+                    type_enemy = Enemy.ENEMY_TYPE_MOVING;
+                }else if(mRandom.nextFloat() < 0.2f){
+                    type_enemy = Enemy.ENEMY_TYPE_MOVING2;
+                }else {
+                    type_enemy = Enemy.ENEMY_TYPE_STATIC;
+                }
+                Enemy enemy = new Enemy(type_enemy,enemyTexture, 0, 0, 72, 72,yEnemy);
+                enemy.setPosition(step.getX() + mRandom.nextFloat(), yEnemy);
+                mEnemy.add(enemy);
             }
 
             //最大値を下げて
@@ -263,12 +293,17 @@ public class GameScreen extends ScreenAdapter {
             }
         }
 
-        // Step
+        // Step 格納したリストの最大値までアップデート
         for (int i = 0; i < mSteps.size(); i++) {
             mSteps.get(i).update(delta);
         }
 
-        // Player
+        // Enemy 格納したリストの最大値までアップデート
+        for (int i = 0; i < mEnemy.size(); i++) {
+            mEnemy.get(i).update(delta);
+        }
+
+        // Player 0.5以下だったら（初期値）ジャンプ
         if (mPlayer.getY() <= 0.5f) {
             mPlayer.hitStep();
         }
@@ -296,6 +331,19 @@ public class GameScreen extends ScreenAdapter {
             Gdx.app.log("JampActionGame", "CLEAR");
             mGameState = GAME_STATE_GAMEOVER;
             return;
+        }
+
+        // Enemyとの当たり判定
+        for (int i = 0; i < mEnemy.size(); i++) {
+
+            Enemy enemy = mEnemy.get(i);
+            if (mPlayer.getBoundingRectangle().overlaps(enemy.getBoundingRectangle())) {
+                enemySound.play(1.0f);
+                enemySound.dispose();
+                Gdx.app.log("JampActionGame", "GAMEOVER");
+                mGameState = GAME_STATE_GAMEOVER;
+                return;
+            }
         }
 
         // Starとの当たり判定
