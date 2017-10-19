@@ -33,12 +33,21 @@ public class Step extends GameObject {
     // 座標を更新する
     public void update(float deltaTime) {
         if (mType == STEP_TYPE_MOVING) {
+
+            //Xは初期x値にベクトル速度の時間をかけたものを足す
             setX(getX() + velocity.x * deltaTime);
 
+            //xが幅の半分以下だったら
             if (getX() < STEP_WIDTH / 2) {
+
+                //ベクトルの向きを反転
                 velocity.x = -velocity.x;
+
+                //xの値を初期化
                 setX(STEP_WIDTH / 2);
             }
+
+            //その逆
             if (getX() > GameScreen.WORLD_WIDTH - STEP_WIDTH / 2) {
                 velocity.x = -velocity.x;
                 setX(GameScreen.WORLD_WIDTH - STEP_WIDTH / 2);

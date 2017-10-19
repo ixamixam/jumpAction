@@ -6,6 +6,8 @@ import com.badlogic.gdx.math.Vector2;
 
 //継承クラス
 public class GameObject extends Sprite {
+
+    //２次元ベクトルを表すクラス
     public final Vector2 velocity;  // x方向、y方向の速度を保持する
 
     public GameObject(Texture texture, int srcX, int srcY, int srcWidth, int srcHeight) {
